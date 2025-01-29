@@ -1,39 +1,6 @@
+> [!WARNING]  
+> This is intended for Erethon.net. While it may work on any Paper 1.21.4+ server, no support is provided whatsoever. 
 
-<div id="top"></div>
-
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![APACHE-2.0 License][license-shield]][license-url]
-
-<!-- PROJECT LOGO -->
-<br />
-<div align="center">
-  <a href="https://github.com/AtlasEngineCa/WorldSeedEntityEngine">
-    <img src=".github/icon.png" alt="Logo" width="180" height="180">
-  </a>
-
-  <h3 align="center">WSEE</h3>
-
-  <p align="center">
-    WorldSeed Entity Engine
-    <br />
-    <br />
-    <br />
-    <a href="https://github.com/AtlasEngineCa/WorldSeedEntityEngine/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/AtlasEngineCa/WorldSeedEntityEngine/issues">Request Feature</a>
-  </p>
-</div>
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
@@ -48,41 +15,7 @@ This is a library that allows users to add bedrock models from blockbench in to 
 WSEE lets you create multipart entities, using display entities.
 The framework provided allows users to easily create multipart entities, define animations, and write AI that fully utilises the entity's animations.
 
-Currently WSEE only supports [Minestom](https://github.com/Minestom/Minestom)
-
-<!-- GETTING STARTED -->
-## Getting Started
-
-A full, runnable example server can be found [here](https://github.com/AtlasEngineCa/WorldSeedEntityEngine/tree/master/src/test/java)
-
-### Adding as a dependency
-
-Add the following to your `build.gradle.kts` file:
-
-```
-repositories {
-    maven("https://reposilite.worldseed.online/public")
-}
-```
-
-Add the library as a dependency
-```
-dependencies {
-    implementation("net.worldseed.multipart:WorldSeedEntityEngine:<version>")
-}
-```
-
-The lastest version number can be found [here](https://reposilite.worldseed.online/#/public/net/worldseed/multipart/WorldSeedEntityEngine)
-
-### VM Arguments
-
-Add the following VM arguments to your run configuration
-
-```
---add-opens java.base/java.lang=ALL-UNNAMED
-```
-
-This is required for the molang compiler library.
+**This is a port of the original [WSEE](https://github.com/AtlasEngineCa/WorldSeedEntityEngine) for Erethon.net, adding Paper support with fully packet-based entities.**
 
 ## Restrictions
 
@@ -99,9 +32,6 @@ A: Entities used for bones will be placed at the pivot point of the bone in bloc
 
 Q: Why is my model not working?\
 A: Make sure you have the type set to `Bedrock Model` in blockbench
-
-Q: Why am I getting the exception `InaccessibleObjectException`\
-A: Make sure you have the VM arguments set up correctly, as described in the [Getting Started](#getting-started) section
 
 Q: Why are `ModelDamageEvent` and `ModelInteractEvent` not triggering?\
 A: You need to create hitboxes for the model [Hitboxes](https://github.com/AtlasEngineCa/WorldSeedEntityEngine/wiki/Bone-Types#hitbox)
