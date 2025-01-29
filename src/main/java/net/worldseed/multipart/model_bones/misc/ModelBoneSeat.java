@@ -1,25 +1,26 @@
 package net.worldseed.multipart.model_bones.misc;
 
 import net.kyori.adventure.util.RGBLike;
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
-import net.minestom.server.entity.Entity;
-import net.minestom.server.entity.EntityType;
-import net.minestom.server.entity.Player;
-import net.minestom.server.entity.metadata.other.ArmorStandMeta;
-import net.minestom.server.instance.Instance;
-import net.minestom.server.tag.Tag;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.Level;
 import net.worldseed.multipart.GenericModel;
 import net.worldseed.multipart.Quaternion;
 import net.worldseed.multipart.model_bones.BoneEntity;
 import net.worldseed.multipart.model_bones.ModelBone;
 import net.worldseed.multipart.model_bones.ModelBoneImpl;
 import net.worldseed.multipart.model_bones.bone_types.RideableBone;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Pos;
+import net.worldseed.util.math.Vec;
+import org.bukkit.entity.Entity;
 
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+
+import static net.minecraft.world.entity.decoration.ArmorStand.DATA_CLIENT_FLAGS;
 
 public class ModelBoneSeat extends ModelBoneImpl implements RideableBone {
 
@@ -27,24 +28,21 @@ public class ModelBoneSeat extends ModelBoneImpl implements RideableBone {
         super(pivot, name, rotation, model, scale);
 
         if (this.offset != null) {
-            this.stand = new BoneEntity(EntityType.ARMOR_STAND, model, name);
-            this.stand.editEntityMeta(ArmorStandMeta.class, meta -> {
-                meta.setMarker(true);
-            });
-
-            this.stand.setTag(Tag.String("WSEE"), "seat");
-            stand.setInvisible(true);
+            entity = new BoneEntity(EntityType.ARMOR_STAND, model, name);
+            SynchedEntityData synchedEntityData = entity.getSynchedEntityData();
+            synchedEntityData.set(DATA_CLIENT_FLAGS, entity.setBit(synchedEntityData.get(DATA_CLIENT_FLAGS), 16, true)); // Marker
+            entity.setInvisible(true);
         }
     }
 
     @Override
-    public void addViewer(Player player) {
-        if (this.stand != null) this.stand.addViewer(player);
+    public void addViewer(ServerPlayer player) {
+        if (entity != null) entity.addNewViewer(player);
     }
 
     @Override
-    public void removeViewer(Player player) {
-        if (this.stand != null) this.stand.removeViewer(player);
+    public void removeViewer(ServerPlayer player) {
+        if (entity != null) entity.removeViewer(player);
     }
 
     @Override
@@ -58,12 +56,12 @@ public class ModelBoneSeat extends ModelBoneImpl implements RideableBone {
     }
 
     @Override
-    public void removeGlowing(Player player) {
+    public void removeGlowing(ServerPlayer player) {
 
     }
 
     @Override
-    public void setGlowing(Player player, RGBLike color) {
+    public void setGlowing(ServerPlayer player, RGBLike color) {
 
     }
 
@@ -96,12 +94,10 @@ public class ModelBoneSeat extends ModelBoneImpl implements RideableBone {
         return calculatePosition();
     }
 
-    public CompletableFuture<Void> spawn(Instance instance, Point position) {
+    public CompletableFuture<Void> spawn(Level level, Point position) {
         if (this.offset != null) {
-            this.stand.setInvisible(true);
-            this.stand.setNoGravity(true);
-            this.stand.setSilent(true);
-            return this.stand.setInstance(instance, position);
+            entity.setInvisible(true);
+            entity.setSilent(true);
         }
         return CompletableFuture.completedFuture(null);
     }
@@ -141,22 +137,22 @@ public class ModelBoneSeat extends ModelBoneImpl implements RideableBone {
         Pos found = calculatePosition();
 
         // TODO: needed by minestom?
-        stand.setView(found.yaw(), found.pitch());
-        stand.teleport(found);
+        entity.setView(found.yaw(), found.pitch());
+        entity.teleport(found);
     }
 
     @Override
     public void addPassenger(Entity entity) {
-        this.stand.addPassenger(entity);
+        this.entity.addPassenger(entity);
     }
 
     @Override
     public void removePassenger(Entity entity) {
-        this.stand.removePassenger(entity);
+        this.entity.removePassenger(entity);
     }
 
     @Override
     public Set<Entity> getPassengers() {
-        return this.stand.getPassengers();
+        return entity.getPassengers();
     }
 }

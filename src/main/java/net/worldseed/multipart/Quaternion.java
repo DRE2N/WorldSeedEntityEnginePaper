@@ -1,7 +1,7 @@
 package net.worldseed.multipart;
 
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Vec;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Vec;
 
 final public class Quaternion {
     private final double x;

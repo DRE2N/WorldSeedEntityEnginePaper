@@ -1,7 +1,7 @@
 package net.worldseed.multipart;
 
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Vec;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Vec;
 
 class Matrix3 {
     double x1, x2, x3;

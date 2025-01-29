@@ -1,25 +1,24 @@
 package net.worldseed.multipart.events;
 
-import net.minestom.server.entity.Player;
-import net.minestom.server.entity.PlayerHand;
-import net.minestom.server.event.player.PlayerEntityInteractEvent;
 import net.worldseed.multipart.model_bones.BoneEntity;
-import net.worldseed.gestures.EmoteModel;
 import net.worldseed.multipart.GenericModel;
+import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ModelInteractEvent implements ModelEvent {
+public class ModelInteractEvent extends ModelEvent {
     private final GenericModel model;
     private final Player interactor;
     private final BoneEntity interactedBone;
-    private final PlayerHand hand;
+    private final EquipmentSlot hand;
 
-    public ModelInteractEvent(@NotNull EmoteModel model, PlayerEntityInteractEvent event) {
+    /*public ModelInteractEvent(@NotNull EmoteModel model, PlayerInteractEntityEvent event) {
         this(model, event, null);
-    }
+    }*/
     
-    public ModelInteractEvent(@NotNull GenericModel model, PlayerEntityInteractEvent event, @Nullable BoneEntity interactedBone) {
+    public ModelInteractEvent(@NotNull GenericModel model, PlayerInteractEntityEvent event, @Nullable BoneEntity interactedBone) {
         this.model = model;
         this.hand = event.getHand();
         this.interactor = event.getPlayer();
@@ -31,7 +30,7 @@ public class ModelInteractEvent implements ModelEvent {
         return model;
     }
 
-    public @NotNull PlayerHand getHand() {
+    public @NotNull EquipmentSlot getHand() {
         return hand;
     }
 

@@ -61,6 +61,14 @@ public class ModelGenerator {
         return new BBEntityModel(geometry, anim, textures, modelObj.name(), AdditionalStates.EMPTY());
     }
 
+    public static JsonObject generateItemDefinition(String modelPath) {
+        return Json.createObjectBuilder()
+                .add("model", Json.createObjectBuilder()
+                        .add("type", "minecraft:model")
+                        .add("model", modelPath)
+                ).build();
+    }
+
     public record BBEntityModel(JsonObject geo, JsonObject animations,
                                 Map<String, TextureGenerator.TextureData> textures, String id,
                                 AdditionalStates additionalStates) {

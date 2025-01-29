@@ -1,7 +1,7 @@
 package net.worldseed.resourcepack.multipart.generator;
 
-import net.minestom.server.coordinate.Vec;
 import net.worldseed.resourcepack.PackBuilder;
+import net.worldseed.util.math.Vec;
 
 import javax.json.*;
 import java.util.*;

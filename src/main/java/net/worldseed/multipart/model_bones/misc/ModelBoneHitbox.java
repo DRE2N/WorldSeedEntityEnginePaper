@@ -2,24 +2,22 @@ package net.worldseed.multipart.model_bones.misc;
 
 import com.google.gson.JsonArray;
 import net.kyori.adventure.util.RGBLike;
-import net.minestom.server.MinecraftServer;
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
-import net.minestom.server.entity.EntityType;
-import net.minestom.server.entity.Player;
-import net.minestom.server.entity.metadata.other.InteractionMeta;
-import net.minestom.server.instance.Instance;
-import net.minestom.server.network.packet.server.play.EntityTeleportPacket;
-import net.minestom.server.tag.Tag;
-import net.minestom.server.timer.Task;
-import net.minestom.server.timer.TaskSchedule;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.worldseed.multipart.GenericModel;
+import net.worldseed.multipart.ModelEngine;
 import net.worldseed.multipart.animations.BoneAnimation;
 import net.worldseed.multipart.model_bones.BoneEntity;
 import net.worldseed.multipart.model_bones.ModelBone;
 import net.worldseed.multipart.model_bones.ModelBoneImpl;
 import net.worldseed.multipart.model_bones.bone_types.HitboxBone;
+import net.worldseed.util.DataAccessors;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Pos;
+import net.worldseed.util.math.Vec;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -30,11 +28,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ModelBoneHitbox extends ModelBoneImpl implements HitboxBone {
     private static final int INTERPOLATE_TICKS = 2;
-    private static final Tag<String> WSEE = Tag.String("WSEE");
     private final JsonArray cubes;
     private final Collection<ModelBone> illegitimateChildren = new ConcurrentLinkedDeque<>();
     private final Point orgPivot;
-    private Task positionTask;
+    private BukkitRunnable positionTask;
 
     public ModelBoneHitbox(Point pivot, String name, Point rotation, GenericModel model, Point newOffset, double sizeX, double sizeY, JsonArray cubes, boolean parent, float scale) {
         super(pivot, name, rotation, model, scale);
@@ -47,40 +44,35 @@ public class ModelBoneHitbox extends ModelBoneImpl implements HitboxBone {
             this.offset = null;
         } else {
             if (this.offset != null) {
-                this.stand = new BoneEntity(EntityType.INTERACTION, model, name) {
+                entity = new BoneEntity(EntityType.INTERACTION, model, name) {
                     @Override
-                    public void updateNewViewer(@NotNull Player player) {
-                        super.updateNewViewer(player);
-
-                        EntityTeleportPacket packet = new EntityTeleportPacket(this.getEntityId(), this.position, Vec.ZERO, 0, false);
-                        player.getPlayerConnection().sendPacket(packet);
+                    public void addNewViewer(@NotNull ServerPlayer player) {
+                        super.addNewViewer(player);
+                        synchedEntityData.set(DataAccessors.interaction_heightData, (float) (sizeY / 4f) * scale);
+                        synchedEntityData.set(DataAccessors.interaction_widthData, (float) (sizeX / 4f) * scale);
+                        teleport(position);
                     }
 
-                    @Override
+                    /*@Override
                     public void updateOldViewer(@NotNull Player player) {
                         super.updateOldViewer(player);
-                    }
+                    }*/
                 };
 
-                this.stand.setTag(WSEE, "hitbox");
                 this.offset = newOffset;
-
-                InteractionMeta meta = (InteractionMeta) this.stand.getEntityMeta();
-                meta.setHeight((float) (sizeY / 4f) * scale);
-                meta.setWidth((float) (sizeX / 4f) * scale);
-
-                this.stand.setBoundingBox(sizeX / 4f * scale, sizeY / 4f * scale, sizeX / 4f * scale);
+                AABB aaBB = new AABB(0, 0, 0, sizeX / 4f * scale, sizeY / 4f * scale, sizeX / 4f * scale);
+                entity.setBoundingBox(aaBB);
             }
         }
     }
 
-    public void addViewer(Player player) {
-        if (this.stand != null) this.stand.addViewer(player);
+    public void addViewer(ServerPlayer player) {
+        if (entity != null) entity.addNewViewer(player);
         illegitimateChildren.forEach(modelBone -> modelBone.addViewer(player));
     }
 
-    public void removeViewer(Player player) {
-        if (this.stand != null) this.stand.removeViewer(player);
+    public void removeViewer(ServerPlayer player) {
+        if (entity != null) entity.removeViewer(player);
         illegitimateChildren.forEach(modelBone -> modelBone.removeViewer(player));
     }
 
@@ -108,11 +100,11 @@ public class ModelBoneHitbox extends ModelBoneImpl implements HitboxBone {
     }
 
     @Override
-    public void removeGlowing(Player player) {
+    public void removeGlowing(ServerPlayer player) {
     }
 
     @Override
-    public void setGlowing(Player player, RGBLike color) {
+    public void setGlowing(ServerPlayer player, RGBLike color) {
     }
 
     @Override
@@ -185,7 +177,7 @@ public class ModelBoneHitbox extends ModelBoneImpl implements HitboxBone {
 
     @Override
     public Point getPosition() {
-        return stand.getPosition();
+        return entity.getPosition();
     }
 
     @Override
@@ -195,12 +187,18 @@ public class ModelBoneHitbox extends ModelBoneImpl implements HitboxBone {
     }
 
     @Override
-    public CompletableFuture<Void> spawn(Instance instance, Pos position) {
+    public CompletableFuture<Void> spawn(Level level, Pos position) {
         this.illegitimateChildren.forEach(modelBone -> {
-            modelBone.spawn(instance, modelBone.calculatePosition().add(model.getPosition()));
-            MinecraftServer.getSchedulerManager().scheduleNextTick(modelBone::draw);
+            modelBone.spawn(level, modelBone.calculatePosition().add(model.getPosition()));
+            BukkitRunnable nextTick = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    modelBone.draw();
+                }
+            };
+            nextTick.runTaskLater(ModelEngine.getProvider(), 1);
         });
-        return super.spawn(instance, position);
+        return super.spawn(level, position);
     }
 
     @Override
@@ -251,28 +249,31 @@ public class ModelBoneHitbox extends ModelBoneImpl implements HitboxBone {
             this.illegitimateChildren.forEach(ModelBone::draw);
         }
 
-        if (this.offset == null || this.stand == null) return;
+        if (this.offset == null || entity == null) return;
 
         var finalPosition = calculatePosition().add(model.getPosition());
         if (this.positionTask != null) this.positionTask.cancel();
 
-        Pos currentPos = stand.getPosition();
+        Pos currentPos = entity.getPosition();
         var diff = finalPosition.sub(currentPos).div(INTERPOLATE_TICKS);
         AtomicInteger ticks = new AtomicInteger(1);
 
-        this.positionTask = MinecraftServer.getSchedulerManager().submitTask(() -> {
-            var t = ticks.getAndIncrement();
-            if (stand.isRemoved()) return TaskSchedule.stop();
-
-            var newPos = currentPos.add(diff.mul(t));
-            if (stand.getDistanceSquared(newPos) > 0.005) stand.teleport(newPos);
-
-            if (t >= INTERPOLATE_TICKS) {
-                this.positionTask = null;
-                return TaskSchedule.stop();
+        positionTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                var t = ticks.getAndIncrement();
+                if (entity.isRemoved()) {
+                    this.cancel();
+                    return;
+                }
+                var newPos = currentPos.add(diff.mul(t));
+                if (entity.getDistanceSquared(newPos) > 0.005) entity.teleport(newPos);
+                if (t >= INTERPOLATE_TICKS) {
+                    positionTask = null;
+                    this.cancel();
+                }
             }
-
-            return TaskSchedule.tick(1);
-        });
+        };
+        positionTask.runTaskTimer(ModelEngine.getProvider(), 1, 1);
     }
 }

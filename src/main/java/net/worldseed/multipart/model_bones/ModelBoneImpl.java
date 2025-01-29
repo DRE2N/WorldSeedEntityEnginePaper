@@ -1,16 +1,19 @@
 package net.worldseed.multipart.model_bones;
 
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
-import net.minestom.server.instance.Instance;
-import net.minestom.server.item.ItemStack;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.Level;
 import net.worldseed.multipart.GenericModel;
 import net.worldseed.multipart.ModelEngine;
 import net.worldseed.multipart.ModelLoader.AnimationType;
 import net.worldseed.multipart.ModelMath;
 import net.worldseed.multipart.Quaternion;
 import net.worldseed.multipart.animations.BoneAnimation;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Pos;
+import net.worldseed.util.math.Vec;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +31,7 @@ public abstract class ModelBoneImpl implements ModelBone {
     protected float scale;
     protected Point offset;
     protected Point rotation;
-    protected BoneEntity stand;
+    protected BoneEntity entity;
     private ModelBone parent;
 
     public ModelBoneImpl(Point pivot, String name, Point rotation, GenericModel model, float scale) {
@@ -48,7 +51,7 @@ public abstract class ModelBoneImpl implements ModelBone {
 
     @Override
     public BoneEntity getEntity() {
-        return stand;
+        return entity;
     }
 
     @Override
@@ -88,7 +91,6 @@ public abstract class ModelBoneImpl implements ModelBone {
 
     public Point applyTransform(Point p) {
         Point endPos = p;
-
         if (this.diff != null) {
             endPos = calculateScale(endPos, this.getPropogatedScale(), this.pivot.sub(this.diff));
             endPos = calculateRotation(endPos, this.getPropogatedRotation(), this.pivot.sub(this.diff));
@@ -96,7 +98,6 @@ public abstract class ModelBoneImpl implements ModelBone {
             endPos = calculateScale(endPos, this.getPropogatedScale(), this.pivot);
             endPos = calculateRotation(endPos, this.getPropogatedRotation(), this.pivot);
         }
-
         for (BoneAnimation currentAnimation : this.allAnimations) {
             if (currentAnimation != null && currentAnimation.isPlaying()) {
                 if (currentAnimation.getType() == AnimationType.TRANSLATION) {
@@ -105,17 +106,14 @@ public abstract class ModelBoneImpl implements ModelBone {
                 }
             }
         }
-
         if (this.parent != null) {
             endPos = parent.applyTransform(endPos);
         }
-
         return endPos;
     }
 
     public Point getPropogatedRotation() {
         Point netTransform = Vec.ZERO;
-
         for (BoneAnimation currentAnimation : this.allAnimations) {
             if (currentAnimation != null && currentAnimation.isPlaying()) {
                 if (currentAnimation.getType() == AnimationType.ROTATION) {
@@ -124,14 +122,12 @@ public abstract class ModelBoneImpl implements ModelBone {
                 }
             }
         }
-
         return this.rotation.add(netTransform);
     }
 
     @Override
     public Point getPropogatedScale() {
         Point netTransform = Vec.ONE;
-
         for (BoneAnimation currentAnimation : this.allAnimations) {
             if (currentAnimation != null && currentAnimation.isPlaying()) {
                 if (currentAnimation.getType() == AnimationType.SCALE) {
@@ -140,7 +136,6 @@ public abstract class ModelBoneImpl implements ModelBone {
                 }
             }
         }
-
         return netTransform;
     }
 
@@ -150,7 +145,6 @@ public abstract class ModelBoneImpl implements ModelBone {
             Point pq = parent.calculateFinalScale(parent.getPropogatedScale());
             q = pq.mul(q);
         }
-
         return q;
     }
 
@@ -159,7 +153,6 @@ public abstract class ModelBoneImpl implements ModelBone {
             Quaternion pq = parent.calculateFinalAngle(new Quaternion(parent.getPropogatedRotation()));
             q = pq.multiply(q);
         }
-
         return q;
     }
 
@@ -175,17 +168,17 @@ public abstract class ModelBoneImpl implements ModelBone {
     public void destroy() {
         this.children.forEach(ModelBone::destroy);
         this.children.clear();
-
-        if (this.stand != null) {
-            this.stand.remove();
+        if (this.entity != null) {
+            this.entity.remove();
         }
     }
 
-    public CompletableFuture<Void> spawn(Instance instance, Pos position) {
-        if (this.offset != null && this.stand != null) {
-            this.stand.setNoGravity(true);
-            this.stand.setSilent(true);
-            return this.stand.setInstance(instance, position);
+    @Override
+    public CompletableFuture<Void> spawn(Level level, Pos position) {
+        if (entity != null) {
+            for (ServerPlayer player : MinecraftServer.getServer().getPlayerList().players ) {
+                entity.addNewViewer(player);
+            }
         }
         return CompletableFuture.completedFuture(null);
     }

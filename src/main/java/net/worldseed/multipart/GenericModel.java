@@ -1,18 +1,15 @@
 package net.worldseed.multipart;
 
 import net.kyori.adventure.util.RGBLike;
-import net.minestom.server.Viewable;
-import net.minestom.server.collision.Shape;
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.entity.Entity;
-import net.minestom.server.entity.Player;
-import net.minestom.server.event.EventHandler;
-import net.minestom.server.instance.Instance;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.worldseed.multipart.animations.AnimationHandlerImpl;
-import net.worldseed.multipart.events.ModelEvent;
 import net.worldseed.multipart.model_bones.BoneEntity;
 import net.worldseed.multipart.model_bones.ModelBone;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Pos;
+import net.worldseed.util.math.Shape;
+import org.bukkit.entity.Entity;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,8 +17,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-public interface GenericModel extends Viewable, EventHandler<ModelEvent>, Shape {
+public interface GenericModel extends Shape {
     /**
      * Get the ID of the model
      *
@@ -128,7 +126,7 @@ public interface GenericModel extends Viewable, EventHandler<ModelEvent>, Shape 
 
     @NotNull List<ModelBone> getParts();
 
-    Instance getInstance();
+    Level getInstance();
 
     Point getOffset(String bone);
 
@@ -142,9 +140,9 @@ public interface GenericModel extends Viewable, EventHandler<ModelEvent>, Shape 
 
     void setGlowing(RGBLike color);
 
-    void removeGlowing(Player player);
+    void removeGlowing(ServerPlayer player);
 
-    void setGlowing(Player player, RGBLike color);
+    void setGlowing(ServerPlayer player, RGBLike color);
 
     void attachModel(GenericModel model, String boneName);
 
@@ -159,4 +157,10 @@ public interface GenericModel extends Viewable, EventHandler<ModelEvent>, Shape 
     void unbindNametag(String name);
 
     @Nullable Entity getNametag(String name);
+
+    void addViewer(ServerPlayer player);
+
+    void removeViewer(ServerPlayer player);
+
+    Set<ServerPlayer> getViewers();
 }

@@ -1,19 +1,16 @@
 package net.worldseed.multipart.events;
 
-import net.minestom.server.entity.damage.Damage;
-import net.minestom.server.event.entity.EntityDamageEvent;
-import net.minestom.server.event.trait.CancellableEvent;
-import net.minestom.server.sound.SoundEvent;
 import net.worldseed.multipart.GenericModel;
 import net.worldseed.multipart.model_bones.BoneEntity;
-import org.jetbrains.annotations.NotNull;
+import org.bukkit.Sound;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.jetbrains.annotations.Nullable;
 
-public class ModelDamageEvent implements ModelEvent, CancellableEvent {
-    private final GenericModel model;
+public class ModelDamageEvent extends ModelEvent {
+
     private final BoneEntity hitBone;
-    private final Damage damage;
-    private SoundEvent sound;
+    private final double damage;
+    private Sound sound;
 
     private boolean animation = true;
 
@@ -27,8 +24,9 @@ public class ModelDamageEvent implements ModelEvent, CancellableEvent {
         this.model = model;
         this.hitBone = hitBone;
         this.damage = event.getDamage();
-        this.sound = event.getSound();
-        this.animation = event.shouldAnimate();
+
+        //this.sound = event.getSound();
+        //this.animation = event.shouldAnimate();
     }
 
     /**
@@ -36,8 +34,7 @@ public class ModelDamageEvent implements ModelEvent, CancellableEvent {
      *
      * @return the damage
      */
-    @NotNull
-    public Damage getDamage() {
+    public double getDamage() {
         return damage;
     }
 
@@ -47,7 +44,7 @@ public class ModelDamageEvent implements ModelEvent, CancellableEvent {
      * @return the damage sound
      */
     @Nullable
-    public SoundEvent getSound() {
+    public Sound getSound() {
         return sound;
     }
 
@@ -56,7 +53,7 @@ public class ModelDamageEvent implements ModelEvent, CancellableEvent {
      *
      * @param sound the new damage sound
      */
-    public void setSound(@Nullable SoundEvent sound) {
+    public void setSound(@Nullable Sound sound) {
         this.sound = sound;
     }
 
@@ -97,8 +94,4 @@ public class ModelDamageEvent implements ModelEvent, CancellableEvent {
         this.cancelled = cancel;
     }
 
-    @Override
-    public GenericModel model() {
-        return model;
-    }
 }

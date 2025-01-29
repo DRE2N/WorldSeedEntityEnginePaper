@@ -1,15 +1,15 @@
 package net.worldseed.multipart.model_bones.misc;
 
 import net.kyori.adventure.util.RGBLike;
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
-import net.minestom.server.entity.Player;
-import net.minestom.server.instance.Instance;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.worldseed.multipart.GenericModel;
 import net.worldseed.multipart.model_bones.ModelBone;
 import net.worldseed.multipart.model_bones.ModelBoneImpl;
 import net.worldseed.multipart.model_bones.bone_types.VFXBone;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Pos;
+import net.worldseed.util.math.Vec;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ public class ModelBoneVFX extends ModelBoneImpl implements VFXBone {
 
     public ModelBoneVFX(Point pivot, String name, Point rotation, GenericModel model, float scale) {
         super(pivot, name, rotation, model, scale);
-        this.stand = null;
+        this.entity = null;
     }
 
     @Override
@@ -52,7 +52,7 @@ public class ModelBoneVFX extends ModelBoneImpl implements VFXBone {
     public void setState(String state) {
     }
 
-    public CompletableFuture<Void> spawn(Instance instance, Point position) {
+    public CompletableFuture<Void> spawn(Level level, Point position) {
         return CompletableFuture.completedFuture(null);
     }
 
@@ -99,12 +99,12 @@ public class ModelBoneVFX extends ModelBoneImpl implements VFXBone {
     }
 
     @Override
-    public void addViewer(Player player) {
+    public void addViewer(ServerPlayer player) {
         this.attached.forEach(model -> model.addViewer(player));
     }
 
     @Override
-    public void removeViewer(Player player) {
+    public void removeViewer(ServerPlayer player) {
         this.attached.forEach(model -> model.removeViewer(player));
     }
 
@@ -119,12 +119,12 @@ public class ModelBoneVFX extends ModelBoneImpl implements VFXBone {
     }
 
     @Override
-    public void removeGlowing(Player player) {
+    public void removeGlowing(ServerPlayer player) {
         this.attached.forEach(model -> model.removeGlowing(player));
     }
 
     @Override
-    public void setGlowing(Player player, RGBLike color) {
+    public void setGlowing(ServerPlayer player, RGBLike color) {
         this.attached.forEach(model -> model.setGlowing(player, color));
     }
 

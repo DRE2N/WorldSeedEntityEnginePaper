@@ -1,9 +1,9 @@
 package net.worldseed.resourcepack.multipart.parser;
 
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Vec;
 import net.worldseed.resourcepack.multipart.generator.ModelGenerator;
 import net.worldseed.resourcepack.multipart.generator.TextureGenerator;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Vec;
 import org.apache.commons.io.FileUtils;
 
 import javax.imageio.ImageIO;
@@ -242,7 +242,7 @@ public class ModelParser {
 
         JsonObjectBuilder modelTextureJson = Json.createObjectBuilder();
         for (Map.Entry<String, TextureGenerator.TextureData> t : bbModel.textures().entrySet()) {
-            modelTextureJson.add(t.getKey(), "worldseed:mobs/" + bbModel.id() + "/" + state.name() + "/" + t.getKey());
+            modelTextureJson.add(t.getKey(), "erethon:mobs/" + bbModel.id() + "/" + state.name() + "/" + t.getKey());
 
             byte[] textureByte = t.getValue().value();
             BufferedImage texture = ImageIO.read(new BufferedInputStream(new ByteArrayInputStream(textureByte)));
@@ -321,7 +321,7 @@ public class ModelParser {
                     JsonObjectBuilder modelTextureJson = Json.createObjectBuilder();
 
                     for (var t : modelFile.textures.keySet()) {
-                        modelTextureJson.add(t, "worldseed:mobs/" + bbModel.id() + "/" + state.name + "/" + subBone.getValue());
+                        modelTextureJson.add(t, "erethon:mobs/" + bbModel.id() + "/" + state.name + "/" + subBone.getValue());
                     }
 
                     var subbones = bones.stream()
@@ -436,7 +436,7 @@ public class ModelParser {
         customModelData.add("custom_model_data", id);
 
         res.add("predicate", customModelData);
-        res.add("model", "worldseed:mobs/" + name + "/" + state + "/" + bone);
+        res.add("model", "erethon:mobs/" + name + "/" + state + "/" + bone);
 
         return res.build();
     }

@@ -1,13 +1,14 @@
 package net.worldseed.multipart.model_bones;
 
 import net.kyori.adventure.util.RGBLike;
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.entity.Player;
-import net.minestom.server.instance.Instance;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.worldseed.multipart.GenericModel;
 import net.worldseed.multipart.Quaternion;
 import net.worldseed.multipart.animations.BoneAnimation;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Pos;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,7 +18,9 @@ import java.util.concurrent.CompletableFuture;
 
 @ApiStatus.Internal
 public interface ModelBone {
-    CompletableFuture<Void> spawn(Instance instance, Pos position);
+    default CompletableFuture<Void> spawn(Level level, Pos position) {
+        return null;
+    }
 
     Point applyTransform(Point p);
 
@@ -61,9 +64,9 @@ public interface ModelBone {
 
     void addAnimation(BoneAnimation animation);
 
-    void addViewer(Player player);
+    void addViewer(ServerPlayer player);
 
-    void removeViewer(Player player);
+    void removeViewer(ServerPlayer player);
 
     void setGlobalScale(float scale);
 
@@ -71,9 +74,9 @@ public interface ModelBone {
 
     void setGlowing(RGBLike color);
 
-    void removeGlowing(Player player);
+    void removeGlowing(ServerPlayer player);
 
-    void setGlowing(Player player, RGBLike color);
+    void setGlowing(ServerPlayer player, RGBLike color);
 
     void attachModel(GenericModel model);
 

@@ -5,21 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.util.RGBLike;
-import net.minestom.server.MinecraftServer;
-import net.minestom.server.ServerProcess;
-import net.minestom.server.collision.BoundingBox;
-import net.minestom.server.collision.Shape;
-import net.minestom.server.collision.SweepResult;
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
-import net.minestom.server.entity.Entity;
-import net.minestom.server.entity.Player;
-import net.minestom.server.event.EventFilter;
-import net.minestom.server.event.EventNode;
-import net.minestom.server.instance.Instance;
-import net.minestom.server.instance.block.BlockFace;
-import net.minestom.server.network.packet.server.SendablePacket;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.worldseed.multipart.animations.AnimationHandlerImpl;
 import net.worldseed.multipart.events.AnimationCompleteEvent;
 import net.worldseed.multipart.events.ModelEvent;
@@ -33,6 +21,14 @@ import net.worldseed.multipart.model_bones.misc.ModelBoneHitbox;
 import net.worldseed.multipart.model_bones.misc.ModelBoneNametag;
 import net.worldseed.multipart.model_bones.misc.ModelBoneSeat;
 import net.worldseed.multipart.model_bones.misc.ModelBoneVFX;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Pos;
+import net.worldseed.util.math.Shape;
+import net.worldseed.util.math.Vec;
+import org.bukkit.Bukkit;
+import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,12 +41,12 @@ import java.util.function.Predicate;
 public abstract class GenericModelImpl implements GenericModel {
     protected final LinkedHashMap<String, ModelBone> parts = new LinkedHashMap<>();
     protected final Set<ModelBoneImpl> viewableBones = new LinkedHashSet<>();
+    protected Level level;
 
     private final Collection<ModelBone> additionalBones = new ArrayList<>();
-    private final Set<Player> viewers = ConcurrentHashMap.newKeySet();
-    private final EventNode<ModelEvent> eventNode;
-    private final Map<Player, RGBLike> playerGlowColors = Collections.synchronizedMap(new WeakHashMap<>());
-    protected Instance instance;
+    private final Set<ServerPlayer> viewers = ConcurrentHashMap.newKeySet();
+    //private final EventNode<ModelEvent> eventNode;
+    private final Map<ServerPlayer, RGBLike> playerGlowColors = Collections.synchronizedMap(new WeakHashMap<>());
     private Pos position;
     private double globalRotation;
     private double pitch;
@@ -63,20 +59,15 @@ public abstract class GenericModelImpl implements GenericModel {
     Function<ModelBoneInfo, ModelBone> defaultBoneSupplier = (info) -> new ModelBonePartDisplay(info.pivot, info.name, info.rotation, info.model, info.scale);
 
     public GenericModelImpl() {
-        final ServerProcess process = MinecraftServer.process();
+        /*final ServerProcess process = MinecraftServer.process();
         if (process != null) {
             this.eventNode = process.eventHandler().map(this, EventFilter.from(ModelEvent.class, GenericModel.class, ModelEvent::model));
         } else {
             // Local nodes require a server process
             this.eventNode = null;
-        }
+        }*/
 
         registerBoneSuppliers();
-    }
-
-    @Override
-    public @NotNull EventNode<ModelEvent> eventNode() {
-        return eventNode;
     }
 
     @Override
@@ -118,15 +109,15 @@ public abstract class GenericModelImpl implements GenericModel {
     }
 
     public void triggerAnimationEnd(String animation, AnimationHandlerImpl.AnimationDirection direction) {
-        MinecraftServer.getGlobalEventHandler().call(new AnimationCompleteEvent(this, animation, direction));
+        Bukkit.getPluginManager().callEvent(new AnimationCompleteEvent(this, animation, direction));
     }
 
-    public void init(@Nullable Instance instance, @NotNull Pos position) {
-        init(instance, position, 1);
+    public void init(@Nullable Level level, @NotNull Pos position) {
+        init(level, position, 1);
     }
 
-    public void init(@Nullable Instance instance, @NotNull Pos position, float scale) {
-        this.instance = instance;
+    public void init(@Nullable Level level, @NotNull Pos position, float scale) {
+        this.level = level;
         this.position = position;
 
         JsonObject loadedModel = ModelLoader.loadModel(getId());
@@ -138,7 +129,7 @@ public abstract class GenericModelImpl implements GenericModel {
             if (modelBonePart instanceof ModelBoneViewable)
                 viewableBones.add((ModelBoneImpl) modelBonePart);
 
-            modelBonePart.spawn(instance, modelBonePart.calculatePosition()).join();
+            modelBonePart.spawn(level, modelBonePart.calculatePosition()).join();
         }
 
         draw();
@@ -224,10 +215,6 @@ public abstract class GenericModelImpl implements GenericModel {
         }
     }
 
-    public Instance getInstance() {
-        return instance;
-    }
-
     public void setState(String state) {
         for (ModelBoneImpl part : viewableBones) {
             part.setState(state);
@@ -292,70 +279,41 @@ public abstract class GenericModelImpl implements GenericModel {
         return ModelEngine.offsetMappings.get(getId() + "/" + boneName);
     }
 
-    @Override
     public boolean isViewer(@NotNull Player player) {
         return this.viewers.contains(player);
     }
 
-    @Override
-    public void sendPacketToViewers(@NotNull SendablePacket packet) {
-        for (Player viewer : this.viewers) {
-            viewer.sendPacket(packet);
-        }
-    }
-
-    @Override
-    public void sendPacketsToViewers(@NotNull Collection<SendablePacket> packets) {
-        for (Player viewer : this.viewers) {
-            for (SendablePacket packet : packets) {
-                viewer.sendPacket(packet);
-            }
-        }
-    }
-
-    @Override
-    public void sendPacketsToViewers(@NotNull SendablePacket... packets) {
-        for (Player viewer : this.viewers) {
-            for (SendablePacket packet : packets) {
-                viewer.sendPacket(packet);
-            }
-        }
-    }
-
-    @Override
-    public void sendPacketToViewersAndSelf(@NotNull SendablePacket packet) {
-        sendPacketToViewers(packet);
-    }
-
-    @Override
     public @NotNull Audience getViewersAsAudience() {
-        return Audience.audience(viewers);
+        Set<Player> bukkitViewers = new HashSet<>();
+        for (ServerPlayer viewer : this.viewers) {
+            bukkitViewers.add(viewer.getBukkitEntity());
+        }
+        return Audience.audience(bukkitViewers);
     }
 
-    @Override
     public @NotNull Iterable<? extends Audience> getViewersAsAudiences() {
         return List.of(getViewersAsAudience());
     }
 
     @Override
-    public boolean addViewer(@NotNull Player player) {
+    public void addViewer(@NotNull ServerPlayer player) {
         getParts().forEach(part -> part.addViewer(player));
 
         var foundPlayerGlowing = this.playerGlowColors.get(player);
         if (foundPlayerGlowing != null)
             this.viewableBones.forEach(part -> part.setGlowing(player, foundPlayerGlowing));
 
-        return this.viewers.add(player);
+        viewers.add(player);
     }
 
     @Override
-    public boolean removeViewer(@NotNull Player player) {
+    public void removeViewer(@NotNull ServerPlayer player) {
         getParts().forEach(part -> part.removeViewer(player));
-        return this.viewers.remove(player);
+        viewers.remove(player);
     }
 
     @Override
-    public @NotNull Set<@NotNull Player> getViewers() {
+    public @NotNull Set<@NotNull ServerPlayer> getViewers() {
         return Set.copyOf(this.viewers);
     }
 
@@ -408,21 +366,15 @@ public abstract class GenericModelImpl implements GenericModel {
     }
 
     @Override
-    public boolean intersectBox(@NotNull Point point, @NotNull BoundingBox boundingBox) {
+    public boolean intersectBox(@NotNull Point point, @NotNull AABB boundingBox) {
         var pos = getPosition();
 
         for (var bone : this.parts.values()) {
             for (var part : bone.getChildren()) {
-                if (boundingBox.intersectEntity(pos.sub(point), part.getEntity())) return true;
+                if (boundingBox.intersects(part.getEntity().getBoundingBox())) return true;
             }
         }
         return false;
-    }
-
-    @Override
-    @ApiStatus.Experimental
-    public boolean intersectBoxSwept(@NotNull Point rayStart, @NotNull Point rayDirection, @NotNull Point shapePos, @NotNull BoundingBox moving, @NotNull SweepResult finalResult) {
-        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -436,13 +388,13 @@ public abstract class GenericModelImpl implements GenericModel {
     }
 
     @Override
-    public void setGlowing(Player player, RGBLike color) {
+    public void setGlowing(ServerPlayer player, RGBLike color) {
         this.playerGlowColors.put(player, color);
         this.viewableBones.forEach(part -> part.setGlowing(player, color));
     }
 
     @Override
-    public void removeGlowing(Player player) {
+    public void removeGlowing(ServerPlayer player) {
         this.playerGlowColors.remove(player);
         this.viewableBones.forEach(part -> part.removeGlowing(player));
     }
@@ -484,7 +436,7 @@ public abstract class GenericModelImpl implements GenericModel {
         return Collections.emptySet();
     }
 
-    @Override
+    /*@Override
     public void bindNametag(String name, Entity nametag) {
         if (this.parts.get(name) instanceof ModelBoneNametag nametagBone) nametagBone.bind(nametag);
     }
@@ -498,5 +450,5 @@ public abstract class GenericModelImpl implements GenericModel {
     public Entity getNametag(String name) {
         if (this.parts.get(name) instanceof ModelBoneNametag nametagBone) return nametagBone.getNametag();
         return null;
-    }
+    }*/
 }

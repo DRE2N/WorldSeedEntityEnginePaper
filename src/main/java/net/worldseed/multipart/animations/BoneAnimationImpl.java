@@ -3,12 +3,12 @@ package net.worldseed.multipart.animations;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Vec;
 import net.worldseed.multipart.ModelEngine;
 import net.worldseed.multipart.ModelLoader;
 import net.worldseed.multipart.model_bones.ModelBone;
 import net.worldseed.multipart.mql.MQLPoint;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Vec;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;

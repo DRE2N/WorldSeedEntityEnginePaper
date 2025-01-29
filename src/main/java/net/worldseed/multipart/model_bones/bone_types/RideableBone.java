@@ -1,7 +1,7 @@
 package net.worldseed.multipart.model_bones.bone_types;
 
-import net.minestom.server.entity.Entity;
 import net.worldseed.multipart.model_bones.ModelBone;
+import org.bukkit.entity.Entity;
 
 import java.util.Set;
 

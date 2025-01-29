@@ -2,12 +2,10 @@ package net.worldseed.multipart.animations;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minestom.server.MinecraftServer;
-import net.minestom.server.timer.ExecutionType;
-import net.minestom.server.timer.Task;
-import net.minestom.server.timer.TaskSchedule;
 import net.worldseed.multipart.GenericModel;
+import net.worldseed.multipart.ModelEngine;
 import net.worldseed.multipart.ModelLoader;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -15,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AnimationHandlerImpl implements AnimationHandler {
     private final GenericModel model;
-    private final Task task;
+    private final BukkitRunnable task;
 
     private final Map<String, ModelAnimation> animations = new ConcurrentHashMap<>();
     private final TreeMap<Integer, ModelAnimation> repeating = new TreeMap<>();
@@ -27,7 +25,13 @@ public class AnimationHandlerImpl implements AnimationHandler {
     public AnimationHandlerImpl(GenericModel model) {
         this.model = model;
         loadDefaultAnimations();
-        this.task = MinecraftServer.getSchedulerManager().scheduleTask(this::tick, TaskSchedule.immediate(), TaskSchedule.tick(1), ExecutionType.TICK_START);
+        this.task = new BukkitRunnable() {
+            @Override
+            public void run() {
+                tick();
+            }
+        };
+        this.task.runTaskTimer(ModelEngine.getProvider(), 0, 1);
     }
 
     protected void loadDefaultAnimations() {

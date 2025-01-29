@@ -1,11 +1,11 @@
 package net.worldseed.multipart.model_bones.display_entity;
 
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Vec;
 import net.worldseed.multipart.GenericModel;
 import net.worldseed.multipart.ModelLoader;
 import net.worldseed.multipart.animations.BoneAnimation;
 import net.worldseed.multipart.model_bones.ModelBoneViewable;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Vec;
 
 public class ModelBoneHeadDisplay extends ModelBonePartDisplay implements ModelBoneViewable {
     private double headRotation;

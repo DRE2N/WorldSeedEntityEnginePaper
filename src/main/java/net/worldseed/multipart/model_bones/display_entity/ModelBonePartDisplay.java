@@ -1,70 +1,72 @@
 package net.worldseed.multipart.model_bones.display_entity;
 
+import com.mojang.math.Transformation;
+import io.papermc.paper.datacomponent.DataComponentTypes;
 import net.kyori.adventure.util.RGBLike;
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
-import net.minestom.server.entity.Entity;
-import net.minestom.server.entity.EntityType;
-import net.minestom.server.entity.Metadata;
-import net.minestom.server.entity.Player;
-import net.minestom.server.entity.metadata.display.ItemDisplayMeta;
-import net.minestom.server.instance.Instance;
-import net.minestom.server.item.ItemStack;
-import net.minestom.server.network.packet.server.play.EntityMetaDataPacket;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.Level;
 import net.worldseed.multipart.GenericModel;
 import net.worldseed.multipart.Quaternion;
 import net.worldseed.multipart.model_bones.BoneEntity;
 import net.worldseed.multipart.model_bones.ModelBone;
 import net.worldseed.multipart.model_bones.ModelBoneImpl;
 import net.worldseed.multipart.model_bones.ModelBoneViewable;
+import net.worldseed.util.PacketEntity;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Pos;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static net.worldseed.util.DataAccessors.*;
+
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class ModelBonePartDisplay extends ModelBoneImpl implements ModelBoneViewable {
     private final List<GenericModel> attached = new ArrayList<>();
-    private Entity baseStand;
+    private PacketEntity baseEntity;
 
     public ModelBonePartDisplay(Point pivot, String name, Point rotation, GenericModel model, float scale) {
         super(pivot, name, rotation, model, scale);
 
         if (this.offset != null) {
-            this.stand = new BoneEntity(EntityType.ITEM_DISPLAY, model, name);
-
-            var itemMeta = (ItemDisplayMeta) this.stand.getEntityMeta();
-
-            itemMeta.setScale(new Vec(scale, scale, scale));
-            itemMeta.setDisplayContext(ItemDisplayMeta.DisplayContext.THIRD_PERSON_LEFT_HAND);
-            itemMeta.setTransformationInterpolationDuration(2);
-            itemMeta.setPosRotInterpolationDuration(2);
-            itemMeta.setViewRange(1000);
+            entity = new BoneEntity(EntityType.ITEM_DISPLAY, model, name);
+            SynchedEntityData synchedEntityData = entity.getSynchedEntityData();
+            synchedEntityData.set(display_posRotInterpolationData, 2);
+            synchedEntityData.set(display_transformationInterpolationData, 2);
+            synchedEntityData.set(display_viewRangeData, 1000f); // This needs to be a float
+            synchedEntityData.set(itemDisplay_viewContextData, (byte) 1); // Third person left hand, as a byte
         }
     }
 
     @Override
-    public void addViewer(Player player) {
-        if (this.stand != null) this.stand.addViewer(player);
-        if (this.baseStand != null) this.baseStand.addViewer(player);
+    public void addViewer(ServerPlayer player) {
+        if (entity != null) entity.addNewViewer(player);
+        if (baseEntity != null) baseEntity.addNewViewer(player);
         this.attached.forEach(model -> model.addViewer(player));
     }
 
     @Override
     public void removeGlowing() {
-        if (this.stand != null) {
-            var meta = (ItemDisplayMeta) this.stand.getEntityMeta();
-            meta.setHasGlowingEffect(false);
+        if (entity != null) {
+            entity.setGlowing(false);
         }
 
         this.attached.forEach(GenericModel::removeGlowing);
     }
 
-    @Override
+
     public void setGlowing(RGBLike color) {
-        if (this.stand != null) {
+        /*if (entity != null) {
             int rgb = 0;
             rgb |= color.red() << 16;
             rgb |= color.green() << 8;
@@ -75,12 +77,11 @@ public class ModelBonePartDisplay extends ModelBoneImpl implements ModelBoneView
             meta.setGlowColorOverride(rgb);
         }
 
-        this.attached.forEach(model -> model.setGlowing(color));
+        this.attached.forEach(model -> model.setGlowing(color));*/
     }
 
-    @Override
-    public void removeGlowing(Player player) {
-        if (this.stand == null)
+    public void removeGlowing(ServerPlayer player) {
+        /*if (entity == null)
             return;
 
         EntityMetaDataPacket oldMetadataPacket = this.stand.getMetadataPacket();
@@ -94,12 +95,12 @@ public class ModelBonePartDisplay extends ModelBoneImpl implements ModelBoneView
         entries.put(22, Metadata.VarInt(-1));
 
         player.sendPacket(new EntityMetaDataPacket(this.stand.getEntityId(), entries));
-        this.attached.forEach(model -> model.removeGlowing(player));
+        this.attached.forEach(model -> model.removeGlowing(player));*/
     }
 
     @Override
-    public void setGlowing(Player player, RGBLike color) {
-        if (this.stand == null)
+    public void setGlowing(ServerPlayer player, RGBLike color) {
+        /*if (entity == null)
             return;
 
         int rgb = 0;
@@ -118,7 +119,7 @@ public class ModelBonePartDisplay extends ModelBoneImpl implements ModelBoneView
         entries.put(22, Metadata.VarInt(rgb));
 
         player.sendPacket(new EntityMetaDataPacket(this.stand.getEntityId(), entries));
-        this.attached.forEach(model -> model.setGlowing(player, color));
+        this.attached.forEach(model -> model.setGlowing(player, color));*/
     }
 
     @Override
@@ -138,25 +139,24 @@ public class ModelBonePartDisplay extends ModelBoneImpl implements ModelBoneView
 
     @Override
     public void setGlobalRotation(double yaw, double pitch) {
-        if (this.stand != null) {
+        if (entity != null) {
             var correctYaw = (180 + yaw + 360) % 360;
             var correctPitch = (pitch + 360) % 360;
-            this.stand.setView((float) correctYaw, (float) correctPitch);
+            entity.setView((float) correctYaw, (float) correctPitch);
         }
     }
 
-    @Override
-    public void removeViewer(Player player) {
-        if (this.stand != null) this.stand.removeViewer(player);
-        if (this.baseStand != null) this.baseStand.removeViewer(player);
+    public void removeViewer(ServerPlayer player) {
+        if (entity != null) entity.removeViewer(player);
+        if (baseEntity != null) baseEntity.removeViewer(player);
         this.attached.forEach(model -> model.removeViewer(player));
     }
 
     @Override
     public void destroy() {
         super.destroy();
-        if (this.baseStand != null) {
-            this.baseStand.remove();
+        if (baseEntity != null) {
+            baseEntity.remove();
         }
     }
 
@@ -185,26 +185,29 @@ public class ModelBonePartDisplay extends ModelBoneImpl implements ModelBoneView
 
     @Override
     public void teleport(Point position) {
-        if (this.baseStand != null) this.baseStand.teleport(Pos.fromPoint(position));
+        if (baseEntity != null) baseEntity.teleport(Pos.fromPoint(position));
     }
 
+    @SuppressWarnings("unchecked")
     public void draw() {
         this.children.forEach(ModelBone::draw);
         if (this.offset == null) return;
 
-        if (this.stand != null) {
+        if (entity != null) {
             var position = calculatePositionInternal();
             var scale = calculateScale();
 
-            if (this.stand.getEntityMeta() instanceof ItemDisplayMeta meta) {
+            if (entity.getEntityType() == EntityType.ITEM_DISPLAY) {
+
                 Quaternion q = calculateFinalAngle(new Quaternion(getPropogatedRotation()));
 
-                meta.setNotifyAboutChanges(false);
-                meta.setTransformationInterpolationStartDelta(0);
-                meta.setScale(new Vec(scale.x() * this.scale, scale.y() * this.scale, scale.z() * this.scale));
-                meta.setRightRotation(new float[]{(float) q.x(), (float) q.y(), (float) q.z(), (float) q.w()});
-                meta.setTranslation(position);
-                meta.setNotifyAboutChanges(true);
+                Transformation transformation = getTransformation(position, q, scale);
+
+                SynchedEntityData synchedEntityData = entity.getSynchedEntityData();
+                synchedEntityData.set(display_translationData, transformation.getTranslation());
+                synchedEntityData.set(display_scaleData, transformation.getScale());
+                synchedEntityData.set(display_leftRotationData, transformation.getLeftRotation());
+                synchedEntityData.set(display_rightRotationData, transformation.getRightRotation());
 
                 attached.forEach(model -> {
                     model.setPosition(this.model.getPosition().add(calculateGlobalRotation(position)));
@@ -215,34 +218,55 @@ public class ModelBonePartDisplay extends ModelBoneImpl implements ModelBoneView
         }
     }
 
+    private static @NotNull Transformation getTransformation(Pos position, Quaternion q, Point scale) {
+        Vector3f transformTranslation = new Vector3f((float) position.x(), (float) position.y(), (float) position.z());
+        Quaternionf transformLeftRotation = new Quaternionf(0, 0, 0, 1);
+        Quaternionf transformRightRotation = new Quaternionf(q.x(), q.y(), q.z(), q.w());
+        Vector3f transformScale = new Vector3f((float) scale.x(), (float) scale.y(), (float) scale.z());
+        Transformation transformation = new Transformation(transformTranslation, transformLeftRotation, transformScale, transformRightRotation);
+        return transformation;
+    }
+
     @Override
-    public CompletableFuture<Void> spawn(Instance instance, Pos position) {
+    public CompletableFuture<Void> spawn(Level level, Pos position) {
         var correctLocation = (180 + this.model.getGlobalRotation() + 360) % 360;
-        return super.spawn(instance, Pos.fromPoint(position).withYaw((float) correctLocation)).whenCompleteAsync((v, e) -> {
+        return super.spawn(level, Pos.fromPoint(position).withYaw((float) correctLocation)).whenCompleteAsync((v, e) -> {
             if (e != null) {
                 e.printStackTrace();
                 return;
             }
 
             if (!(this.getParent() instanceof ModelBonePartDisplay)) {
-                this.baseStand = model.generateRoot();
-                this.baseStand.setInstance(instance, position).join();
+                baseEntity = model.generateRoot();
             }
         });
     }
 
     @Override
     public void setState(String state) {
-        if (this.stand != null && this.stand.getEntityMeta() instanceof ItemDisplayMeta meta) {
+        if (entity != null && entity.getEntityType() == EntityType.ITEM_DISPLAY) {
             if (state.equals("invisible")) {
-                meta.setItemStack(ItemStack.AIR);
+                setItemStack(state);
                 return;
             }
 
-            var item = this.items.get(state);
+            ItemStack item = this.items.get(state);
             if (item != null) {
-                meta.setItemStack(item);
+                setItemStack(state);
+            } else {
+                setItemStack(state);
             }
+        }
+    }
+
+    private void setItemStack(String state) {
+        ItemStack item = new ItemStack(Material.MAGMA_CREAM);
+        NamespacedKey modelKey = new NamespacedKey("erethon", "mobs/" + model.getId() + "/" + state + "/" + name);
+        item.setData(DataComponentTypes.ITEM_MODEL, modelKey);
+        if (entity != null) {
+            SynchedEntityData synchedEntityData = entity.getSynchedEntityData();
+            synchedEntityData.set(itemDisplay_itemStackData, CraftItemStack.asNMSCopy(item));
+            entity.resendEntityDataForAll();
         }
     }
 

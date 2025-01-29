@@ -1,31 +1,31 @@
 package net.worldseed.multipart.model_bones.misc;
 
 import net.kyori.adventure.util.RGBLike;
-import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
-import net.minestom.server.entity.Entity;
-import net.minestom.server.entity.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.worldseed.multipart.GenericModel;
 import net.worldseed.multipart.model_bones.ModelBoneImpl;
 import net.worldseed.multipart.model_bones.bone_types.NametagBone;
+import net.worldseed.util.PacketEntity;
+import net.worldseed.util.math.Point;
+import net.worldseed.util.math.Pos;
+import net.worldseed.util.math.Vec;
 
 import java.util.List;
 
 public class ModelBoneNametag extends ModelBoneImpl implements NametagBone {
-    private Entity bound;
+    private PacketEntity bound;
 
     public ModelBoneNametag(Point pivot, String name, Point rotation, GenericModel model, float scale) {
         super(pivot, name, rotation, model, scale);
     }
 
     @Override
-    public void addViewer(Player player) {
-        if (this.bound != null) this.bound.addViewer(player);
+    public void addViewer(ServerPlayer player) {
+        if (this.bound != null) this.bound.addNewViewer(player);
     }
 
     @Override
-    public void removeViewer(Player player) {
+    public void removeViewer(ServerPlayer player) {
         if (this.bound != null) this.bound.removeViewer(player);
     }
 
@@ -38,11 +38,11 @@ public class ModelBoneNametag extends ModelBoneImpl implements NametagBone {
     }
 
     @Override
-    public void removeGlowing(Player player) {
+    public void removeGlowing(ServerPlayer player) {
     }
 
     @Override
-    public void setGlowing(Player player, RGBLike color) {
+    public void setGlowing(ServerPlayer player, RGBLike color) {
     }
 
     @Override
@@ -71,10 +71,6 @@ public class ModelBoneNametag extends ModelBoneImpl implements NametagBone {
     @Override
     public Point getPosition() {
         return calculatePosition();
-    }
-
-    public void bind(Entity entity) {
-        this.bound = entity;
     }
 
     public void draw() {
@@ -108,12 +104,7 @@ public class ModelBoneNametag extends ModelBoneImpl implements NametagBone {
     }
 
     @Override
-    public void unbind() {
-        this.bound = null;
-    }
-
-    @Override
-    public Entity getNametag() {
+    public PacketEntity getNametag() {
         return this.bound;
     }
 }
