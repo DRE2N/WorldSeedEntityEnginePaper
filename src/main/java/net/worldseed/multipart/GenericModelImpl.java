@@ -133,6 +133,7 @@ public abstract class GenericModelImpl implements GenericModel {
         }
 
         draw();
+        System.out.println("Model " + getId() + " initialized at " + position + " with bones: " + this.parts.size() + " and viewers: " + this.viewers.size());
 
         this.setState("normal");
     }

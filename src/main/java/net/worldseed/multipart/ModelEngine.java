@@ -109,6 +109,9 @@ public class ModelEngine implements Listener {
             offsetMappings.put(entry.getKey(), getPos(entry.getValue().getAsJsonObject().get("offset").getAsJsonArray()).orElse(Pos.ZERO));
             diffMappings.put(entry.getKey(), getPos(entry.getValue().getAsJsonObject().get("diff").getAsJsonArray()).orElse(Pos.ZERO));
         });
+        plugin.getLogger().info("Loaded mappings: " + blockMappings.size() + " mappings, " +
+                offsetMappings.size() + " offsets, " +
+                diffMappings.size() + " diffs.");
     }
 
     private static ItemStack generateBoneItem(NamespacedKey modelKey) {
@@ -118,6 +121,12 @@ public class ModelEngine implements Listener {
     }
 
     public static HashMap<String, ItemStack> getItems(String model, String name) {
+        plugin.getLogger().info("Loading mappings for  " + model + "/" + name);
+        if (!blockMappings.containsKey(model + "/" + name)) {
+            plugin.getLogger().warning("No mappings found for " + model + "/" + name + " content of blockMappings:");
+            blockMappings.forEach((key, value) -> plugin.getLogger().info(" - " + key + ": " + value.keySet()));
+            return new HashMap<>();
+        }
         return blockMappings.get(model + "/" + name);
     }
 

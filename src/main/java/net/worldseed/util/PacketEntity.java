@@ -59,18 +59,21 @@ public class PacketEntity implements Shape {
             ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(entityId, synchedEntityData.packAll());
             serverPlayer.connection.send(entityDataPacket);
         }
+        System.out.println("Added viewer: " + serverPlayer.getName().getString() + " for entity: " + entityId + " (" + entityType + ") at position: " + pos);
     }
 
     public void removeViewer(ServerPlayer serverPlayer) {
         ClientboundRemoveEntitiesPacket removeEntityPacket = new ClientboundRemoveEntitiesPacket(entityId);
         serverPlayer.connection.send(removeEntityPacket);
         viewers.remove(serverPlayer);
+        System.out.println("Removed viewer: " + serverPlayer.getName().getString() + " for entity: " + entityId + " (" + entityType + ")");
     }
 
     public void remove() {
         isRemoved = true;
         ClientboundRemoveEntitiesPacket removeEntityPacket = new ClientboundRemoveEntitiesPacket(entityId);
         sendPacketToAllViewers(removeEntityPacket);
+        System.out.println("Entity removed: " + entityId + " (" + entityType + ")");
     }
 
     public void resendEntityData(ServerPlayer serverPlayer) {

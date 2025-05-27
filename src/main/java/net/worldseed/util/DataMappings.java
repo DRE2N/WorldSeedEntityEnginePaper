@@ -97,7 +97,7 @@ public class DataMappings {
         // Add parent class data accessors
         Map<String, EntityDataAccessor<?>> entityDataAccessors = new HashMap<>();
         for (Field declaredField : Entity.class.getDeclaredFields()) {
-            if (!declaredField.getName().startsWith("DATA_")) {
+            if (!declaredField.getName().startsWith("DATA_") || declaredField.getType() != EntityDataAccessor.class) {
                 continue;
             }
             try {
