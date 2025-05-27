@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 public class PackBuilder {
+
     public static JsonArray applyInflate(JsonArray from, double inflate) {
         JsonArrayBuilder inflated = Json.createArrayBuilder();
         for (int i = 0; i < from.size(); ++i) {
@@ -43,8 +44,9 @@ public class PackBuilder {
         Files.createDirectories(texturePathMobs);
         Files.createDirectories(modelPathMobs);
         Files.createDirectories(baseModelPath);
+        Files.createDirectories(resourcepack.resolve("assets/minecraft/models/"));
 
-        JsonObject modelMappings = writeCustomModels(entityModels, modelDataPath, texturePathMobs, modelPathMobs, baseModelPath, itemDefinitionPath);
+        JsonObject modelMappings = writeCustomModels(entityModels, modelDataPath, texturePathMobs, modelPathMobs, baseModelPath);
 
         return new ConfigJson(modelMappings.toString());
     }
@@ -59,7 +61,7 @@ public class PackBuilder {
                         .filter(file -> file.getFileName().toString().endsWith(".bbmodel"))
                         .map(entityModel -> {
                             try {
-                                Path pathName = Path.of(rootPath.relativize(entityModel).toString().replace(".bbmodel", ""));
+                                Path pathName = rootPath.relativize(entityModel);
                                 Path stateFile = path.resolve(entityModel.getFileName() + ".states");
 
                                 if (Files.exists(stateFile)) {
@@ -67,7 +69,8 @@ public class PackBuilder {
                                     additionalStateFiles.put(pathName, m);
                                 }
 
-                                return new Model(Files.readString(entityModel, StandardCharsets.UTF_8), pathName.toString(), additionalStateFiles.get(entityModel));
+                                String modelName = pathName.toString().replace("\\", "/");
+                                return new Model(Files.readString(entityModel, StandardCharsets.UTF_8), modelName, additionalStateFiles.get(entityModel));
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
@@ -86,7 +89,7 @@ public class PackBuilder {
         }
     }
 
-    private static JsonObject writeCustomModels(List<Model> entityModels, Path modelDataPath, Path texturePathMobs, Path modelPathMobs, Path baseModelPath, Path itemDefinitionPath) throws Exception {
+    private static JsonObject writeCustomModels(List<Model> entityModels, Path modelDataPath, Path texturePathMobs, Path modelPathMobs, Path baseModelPath) throws Exception {
         Map<String, ModelGenerator.BBEntityModel> res = new HashMap<>();
         JsonObjectBuilder thumbnailMap = Json.createObjectBuilder();
         thumbnailMap.add("parent", "item/generated");
@@ -106,7 +109,17 @@ public class PackBuilder {
         }
 
         thumbnailMap.add("overrides", overrides.build());
-        Files.writeString(baseModelPath.resolve("ink_sac.json"), thumbnailMap.build().toString(), Charset.defaultCharset());
+
+        Files.writeString(baseModelPath.resolve("ink_sac.json"),
+                Json.createObjectBuilder()
+                        .add("model", Json.createObjectBuilder()
+                                .add("type", "minecraft:model")
+                                .add("model", "minecraft:item/ink_sac"))
+                        .build().toString(), Charset.defaultCharset());
+
+        Path inkSacTargetPath = baseModelPath.resolve("../models/item/ink_sac.json");
+        Files.createDirectories(inkSacTargetPath.getParent());
+        Files.writeString(inkSacTargetPath, thumbnailMap.build().toString(), Charset.defaultCharset());
 
         ModelParser.ModelEngineFiles modelData = ModelParser.parse(res.values(), modelPathMobs);
 
@@ -120,7 +133,7 @@ public class PackBuilder {
                 try {
                     Files.createDirectories(resolvedPath);
                     if (found.mcmeta() != null) {
-                        Files.writeString(resolvedPath.resolve(entry.getKey() + ".png.mcmeta"), found.mcmeta().toString(), StandardCharsets.UTF_8);
+						Files.writeString(resolvedPath.resolve(entry.getKey() + ".png.mcmeta"), found.mcmeta().toString(), StandardCharsets.UTF_8);
                     }
 
                     Files.write(resolvedPath.resolve(entry.getKey() + ".png"), entry.getValue());
@@ -130,24 +143,20 @@ public class PackBuilder {
             }
 
             var modelStatePath = modelPathMobs.resolve(model.id()).resolve(model.state().name());
+            try {
+                Files.createDirectories(modelStatePath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            for (var entry : model.bones().entrySet()) {
                 try {
-                    Files.createDirectories(modelStatePath);
+                    Files.writeString(modelStatePath.resolve(entry.getKey()), entry.getValue().toString(), Charset.defaultCharset());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-
-                for (var entry : model.bones().entrySet()) {
-                    try {
-                        Files.writeString(modelStatePath.resolve(entry.getKey()), entry.getValue().toString(), Charset.defaultCharset());
-                        JsonObject itemDefinition = ModelGenerator.generateItemDefinition("erethon:mobs/" + model.id() + "/" + model.state().name() + "/" + entry.getKey().replace(".json", ""));
-                        Path itemDefinitionFile = itemDefinitionPath.resolve(model.id()).resolve(model.state().name());
-                        Files.createDirectories(itemDefinitionFile);
-                        Files.writeString(itemDefinitionFile.resolve(entry.getKey()), itemDefinition.toString(), Charset.defaultCharset());
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
+            }
+        });
 
         final String itemName = ModelEngine.getModelMaterial().name().replace("minecraft:", "");
         Files.writeString(baseModelPath.resolve(itemName + ".json"), modelData.binding().toString(), Charset.defaultCharset());
