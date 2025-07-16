@@ -81,13 +81,6 @@ public class ModelEngine implements Listener {
         return plugin;
     }
 
-    /**
-     * Loads the model from the given path
-     *
-     * @param mappingsData mappings file created by model parser
-     * @param modelPath    path of the models
-     */
-    public static void loadMappings(Reader mappingsData, Path modelPath) {
         JsonObject map = GSON.fromJson(mappingsData, JsonObject.class);
         ModelEngine.modelPath = modelPath;
 
