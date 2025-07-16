@@ -81,6 +81,7 @@ public class ModelEngine implements Listener {
         return plugin;
     }
 
+    public static void loadMappings(Reader mappingsData, Path modelPath) {
         JsonObject map = GSON.fromJson(mappingsData, JsonObject.class);
         ModelEngine.modelPath = modelPath;
 

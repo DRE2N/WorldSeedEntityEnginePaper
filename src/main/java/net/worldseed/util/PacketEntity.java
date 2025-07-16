@@ -20,6 +20,7 @@ import org.bukkit.block.BlockFace;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -54,26 +55,29 @@ public class PacketEntity implements Shape {
         viewers.add(serverPlayer);
         Pos pos = model.getPosition().withView(position.yaw(), 0);
         ClientboundAddEntityPacket addEntityPacket = new ClientboundAddEntityPacket(entityId, uuid, pos.x(), pos.y(), pos.z(), pos.yaw(), pos.pitch(), entityType, 0, Vec3.ZERO, 0);
-        serverPlayer.connection.send(addEntityPacket);
+        ClientboundSetEntityDataPacket entityDataPacket = null;
         if (synchedEntityData != null) {
-            ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(entityId, synchedEntityData.packAll());
-            serverPlayer.connection.send(entityDataPacket);
+            entityDataPacket = new ClientboundSetEntityDataPacket(entityId, synchedEntityData.packAll());
         }
-        System.out.println("Added viewer: " + serverPlayer.getName().getString() + " for entity: " + entityId + " (" + entityType + ") at position: " + pos);
+        if (entityDataPacket != null) {
+            ClientboundBundlePacket bundlePacket = new ClientboundBundlePacket(List.of(addEntityPacket, entityDataPacket));
+            serverPlayer.connection.send(bundlePacket);
+            return;
+        }
+        ClientboundBundlePacket bundlePacket = new ClientboundBundlePacket(List.of(addEntityPacket));
+        serverPlayer.connection.send(bundlePacket);
     }
 
     public void removeViewer(ServerPlayer serverPlayer) {
         ClientboundRemoveEntitiesPacket removeEntityPacket = new ClientboundRemoveEntitiesPacket(entityId);
         serverPlayer.connection.send(removeEntityPacket);
         viewers.remove(serverPlayer);
-        System.out.println("Removed viewer: " + serverPlayer.getName().getString() + " for entity: " + entityId + " (" + entityType + ")");
     }
 
     public void remove() {
         isRemoved = true;
         ClientboundRemoveEntitiesPacket removeEntityPacket = new ClientboundRemoveEntitiesPacket(entityId);
         sendPacketToAllViewers(removeEntityPacket);
-        System.out.println("Entity removed: " + entityId + " (" + entityType + ")");
     }
 
     public void resendEntityData(ServerPlayer serverPlayer) {

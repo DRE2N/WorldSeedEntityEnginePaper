@@ -53,7 +53,7 @@ public class DaedalusPlugin extends JavaPlugin implements CommandExecutor {
 
         try {
             FileUtils.copyDirectory(BASE_PATH.resolve("resourcepack_template").toFile(), BASE_PATH.resolve("resourcepack").toFile());
-            var config = PackBuilder.Generate(BASE_PATH.resolve("bbmodel"), BASE_PATH.resolve("resourcepack"), MODEL_PATH);
+            var config = PackBuilder.generate(BASE_PATH.resolve("bbmodel"), BASE_PATH.resolve("resourcepack"), MODEL_PATH);
             FileUtils.writeStringToFile(BASE_PATH.resolve("model_mappings.json").toFile(), config.modelMappings(), Charset.defaultCharset());
 
             Reader mappingsData = new InputStreamReader(new FileInputStream(BASE_PATH.resolve("model_mappings.json").toFile()));
@@ -105,6 +105,7 @@ public class DaedalusPlugin extends JavaPlugin implements CommandExecutor {
         Level level = cw.getHandle();
         DModel model = new DModel(modelId, this);
         model.init(level, new Pos(location.getX(), location.getY(), location.getZ()), scale);
+        model.setGlobalRotation(location.getYaw());
         return model;
     }
 }
